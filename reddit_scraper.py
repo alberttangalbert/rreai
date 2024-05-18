@@ -61,6 +61,8 @@ name = driver \
 #go to line(s) highlighted in orange 
 #right click on orange then hover over "copy"
 #click on "copy JS path"
+#this is one way to do it 
+#you can also do it via find_element(s) and get attribute like way with posts
 description = driver.execute_script("""return document \
                                                     .querySelector("#subreddit-right-rail__partial > aside > div > shreddit-subreddit-header") \
                                                     .shadowRoot \
@@ -79,31 +81,60 @@ subreddit['members'] = members
 
 
 #scrape posts
+#post_html_elements = driver.find_elements(By.CSS_SELECTOR, 'article.w-full.m-0')
+
+#stores all posts scraped 
 posts = []
-post_html_elements = driver.find_elements(By.CSS_SELECTOR, 'article.w-full.m-0')
+#
+post_html_elements = []
+num_posts = 0
+max_posts2scrape = 100
 
-for post_html_element in post_html_elements[:4]:
+while True:
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    time.sleep(10)  # Wait for new posts to load
+    new_posts = driver.find_elements(By.CSS_SELECTOR, 'article.w-full.m-0')
+    if len(new_posts) == num_posts or max_posts2scrape < num_posts:
+        break  # Break the loop if no new posts are loaded
+    num_posts = len(new_posts)
+    post_html_elements = new_posts
+
+for post_html_element in post_html_elements:
     #https://stackoverflow.com/questions/71885891/urllib3-exceptions-maxretryerror-httpconnectionpoolhost-localhost-port-5958
-    try:
-        post = {}
-        print(post_html_element)
-        # Extract the permalink
-        title = post_html_element.get_attribute('aria-label')
+    # try:
+    post = {}
 
-        print(title)
-    except:
-        driver.quit()
-        print("\nScrapper stopped, launching again in 4 seconds...")
-        time.sleep(4)
-        driver = webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install()),
-            options=options
-        )
-        driver.delete_all_cookies()
-        driver.get(url)
-        time.sleep(3)
-        title = post_html_element.get_attribute('aria-label')
-        print(title)
+    title = post_html_element.get_attribute('aria-label')
+    post["title"] = title
+    print(title)
+
+    href_link = post_html_element \
+                    .find_element(By.CSS_SELECTOR, "shreddit-post") \
+                    .find_element(By.XPATH, 'div/div[2]/div[4]/div/a') \
+                    .get_attribute('href')
+    post["link"] = href_link
+    print(href_link)
+
+    upvotes = post_html_element \
+                    .find_element(By.CSS_SELECTOR, "shreddit-post") \
+                    .shadow_root \
+                    .find_element(By.CLASS_NAME, 'pt-xs') \
+                    .find_element(By.XPATH, 'div/span/span/span/faceplate-number').text
+    post["upvotes"] = upvotes
+    print(upvotes)
+    posts.append(post)
+    # except:
+    #     driver.quit()
+    #     print("\nScrapper stopped, launching again in 4 seconds...")
+    #     time.sleep(4)
+    #     driver = webdriver.Chrome(
+    #         service=ChromeService(ChromeDriverManager().install()),
+    #         options=options
+    #     )
+    #     driver.delete_all_cookies()
+    #     driver.get(url)
+
+subreddit['posts'] = posts
 
 with open('scraped_data.json', 'w') as fp:
     json.dump(subreddit, fp)
