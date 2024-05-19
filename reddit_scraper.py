@@ -42,7 +42,7 @@ driver.fullscreen_window()
 #never got xpath to work tho :/
 #driver.get_element(By.XPATH, "")
 #might be worth looking into but I don't fully understnat how XPATH works
-url = 'https://www.reddit.com/r/technology/top/?t=week'
+url = 'https://www.reddit.com/r/wallstreetbets/'
 
 #
 # connect to the target URL in Selenium
@@ -63,6 +63,7 @@ name = driver \
 #click on "copy JS path"
 #this is one way to do it 
 #you can also do it via find_element(s) and get attribute like way with posts
+#For shadowroots you need to use execute script!!!!
 description = driver.execute_script("""return document \
                                                     .querySelector("#subreddit-right-rail__partial > aside > div > shreddit-subreddit-header") \
                                                     .shadowRoot \
@@ -88,13 +89,13 @@ posts = []
 #
 post_html_elements = []
 num_posts = 0
-max_posts2scrape = 100
+n_posts2scrape = 10
 
 while True:
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(10)  # Wait for new posts to load
     new_posts = driver.find_elements(By.CSS_SELECTOR, 'article.w-full.m-0')
-    if len(new_posts) == num_posts or max_posts2scrape < num_posts:
+    if len(new_posts) == num_posts or n_posts2scrape < num_posts:
         break  # Break the loop if no new posts are loaded
     num_posts = len(new_posts)
     post_html_elements = new_posts
@@ -108,21 +109,64 @@ for post_html_element in post_html_elements:
     post["title"] = title
     print(title)
 
-    href_link = post_html_element \
-                    .find_element(By.CSS_SELECTOR, "shreddit-post") \
-                    .find_element(By.XPATH, 'div/div[2]/div[4]/div/a') \
-                    .get_attribute('href')
-    post["link"] = href_link
-    print(href_link)
+    try:
+        #hrefs exist mainly in subreddits like r/technology, where there are 
+        #links to external articlecs within each of the posts 
+        elements_with_href = post_html_element \
+                        .find_element(By.CSS_SELECTOR, "shreddit-post") \
+                        .find_elements(By.CSS_SELECTOR, "[href]") 
+        post["links"] = set()
+        for element in elements_with_href:
+            link = element.get_attribute("href")
+            post["links"].add(link)
+        print(post["links"])
+    except:
+        print("links to articles not found")
 
-    upvotes = post_html_element \
-                    .find_element(By.CSS_SELECTOR, "shreddit-post") \
-                    .shadow_root \
-                    .find_element(By.CLASS_NAME, 'pt-xs') \
-                    .find_element(By.XPATH, 'div/span/span/span/faceplate-number').text
-    post["upvotes"] = upvotes
-    print(upvotes)
+    try:
+        #get timestamp of each post
+        timestamp = post_html_element \
+                        .find_element(By.TAG_NAME, "faceplate-timeago") \
+                        .find_element(By.TAG_NAME, "time") \
+                        .get_attribute("title")
+        post["timestamp"] = timestamp
+        print(timestamp)
+    except:
+        print("timestamp not found")
+
+    try:
+        #get body or written content/paragraph of each post
+        p_tags = post_html_element \
+                        .find_element(By.TAG_NAME, "shreddit-post") \
+                        .find_elements(By.TAG_NAME, "p") 
+        body = " ".join([p.text for p in p_tags])
+        post["body"] = body
+        print(body)
+    except:
+        print("body not found")
+
+    try:
+        #get the number of upvotes for current post 
+        upvotes = post_html_element \
+                        .find_element(By.CSS_SELECTOR, "shreddit-post") \
+                        .shadow_root \
+                        .find_element(By.CLASS_NAME, 'pt-xs') \
+                        .find_element(By.XPATH, 'div/span/span/span/faceplate-number').text
+        post["upvotes"] = upvotes
+        print(upvotes)
+    except:
+        #for some reason the posts with videos have a different path to the upvotes 
+        upvotes = driver.execute_script("""return arguments[0] \
+                                                        .querySelector("shreddit-post") \
+                                                        .shadowRoot \
+                                                        .querySelector("div > span > span > span > faceplate-number") \
+                                                        .innerText""", post_html_element)
+        post["upvotes"] = upvotes
+        print(upvotes)
+ 
     posts.append(post)
+    print()
+
     # except:
     #     driver.quit()
     #     print("\nScrapper stopped, launching again in 4 seconds...")
