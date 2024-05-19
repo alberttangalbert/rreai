@@ -8,7 +8,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 import json
-import sys
 import time
 
 #for the future when we have rotating proxies 
