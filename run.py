@@ -1,6 +1,6 @@
 from selenium import webdriver
 from web_driver_setup import Web_Driver_Setup
-from scrapers import Reddit_Scraper
+from scrapers import Reddit_Scraper, Arbitrary_Scraper
 import json 
 
 # Example usage
@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     # Customize options for web driver 
     chrome_options = webdriver.ChromeOptions()
-    # make brower window invisible
+    # make browder window invisible
     chrome_options.add_argument("--headless=new")  
     # https://developer.mozilla.org/en-US/docs/Glossary/User_agent
     chrome_options.add_argument(f"--user-agent={user_agent}")  
@@ -27,9 +27,11 @@ if __name__ == "__main__":
     driver = webdriver_setup.initialize_driver()
 
     # Initialize the scraper
-    scraper = Reddit_Scraper(driver = driver)
+    #scraper = Reddit_Scraper(driver = driver)
+    scraper = Arbitrary_Scraper(user_agent = user_agent)
 
-    data = scraper.scrape_subreddit("https://www.reddit.com/r/wallstreetbets/", 10)
+    #data = scraper.scrape_subreddit("https://www.reddit.com/r/wallstreetbets/", 10)
+    data = scraper.scrape_website("https://www.cnn.com/2024/05/26/weather/memorial-day-weekend-forecast-sunday/index.html")
     with open('scraped_data.json', 'w') as fp:
             json.dump(data, fp)
 

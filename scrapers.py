@@ -1,6 +1,7 @@
 # https://brightdata.com/blog/web-data/how-to-scrape-reddit-python
 
 from selenium.webdriver.common.by import By
+import bs4, requests
 import time
 
 class Reddit_Scraper:
@@ -12,6 +13,9 @@ class Reddit_Scraper:
             inputs: 
                 subreddit_link, a string that is a link to a specific subreddit
                 n_posts, the number of posts to retrieve from the subreddit
+
+            output:
+                dictionary containing all of the scraped data
         """
         # storage for all the data scraped 
         subreddit_data = {}
@@ -56,9 +60,10 @@ class Reddit_Scraper:
 
         # variable to keep track of the number of posts scraped 
         num_posts = 0
+
         # set the number of posts to scrape off the subreddit
         # or else for big subreddits the scraping will take forever 
-        n_posts2scrape = 10
+        n_posts2scrape = n_posts
         while True:
             # this simulates the user scrolling down get load more posts
             # without this and only calling "driver.find_elements(By.CSS_SELECTOR, 'article.w-full.m-0')"
@@ -159,3 +164,45 @@ class Reddit_Scraper:
         subreddit_data['posts'] = posts
 
         return subreddit_data
+
+#the purpose of this class is to scrape a random website where you don't know the html layout
+class Arbitrary_Scraper:
+    def __init__(self, user_agent = 'Mozilla/5.0'):
+        self.user_agent = user_agent
+
+    def scrape_website(self, website_link):
+        '''
+            input:
+                website_link is a string that is a link to a random website
+            output:
+                string that containts all the human-readable text on the website
+
+            note: we use Selenium for tzitter and reddit because it simulates a 
+            human user. Social media platforms have huge bot detection algos 
+            for one-time access scraping we can use 'requests'
+        '''
+        response = requests.get(website_link, headers = {'User-Agent': self.user_agent})
+        soup = bs4.BeautifulSoup(response.text,'lxml')
+        txt = soup.body.get_text('\n', strip = False)
+        return txt
+    
+#the purpose of this class is to scrape a random website where you don't know the html layout
+class Google_Scraper:
+    def __init__(self, user_agent = 'Mozilla/5.0'):
+        self.user_agent = user_agent
+
+    def scrape_website(self, website_link):
+        '''
+            input:
+                website_link is a string that is a link to a random website
+            output:
+                string that containts all the human-readable text on the website
+
+            note: we use Selenium for tzitter and reddit because it simulates a 
+            human user. Social media platforms have huge bot detection algos 
+            for one-time access scraping we can use 'requests'
+        '''
+        response = requests.get(website_link, headers = {'User-Agent': self.user_agent})
+        soup = bs4.BeautifulSoup(response.text,'lxml')
+        txt = soup.body.get_text('\n', strip = False)
+        return txt
