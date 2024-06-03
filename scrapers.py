@@ -1,5 +1,6 @@
 # https://brightdata.com/blog/web-data/how-to-scrape-reddit-python
-
+from bs4 import BeautifulSoup
+import requests, lxml
 from selenium.webdriver.common.by import By
 import bs4, requests
 import time
@@ -165,7 +166,7 @@ class Reddit_Scraper:
 
         return subreddit_data
 
-#the purpose of this class is to scrape a random website where you don't know the html layout
+# the purpose of this class is to scrape a random website where you don't know the html layout
 class Arbitrary_Scraper:
     def __init__(self, user_agent = 'Mozilla/5.0'):
         self.user_agent = user_agent
@@ -177,7 +178,7 @@ class Arbitrary_Scraper:
             output:
                 string that containts all the human-readable text on the website
 
-            note: we use Selenium for tzitter and reddit because it simulates a 
+            note: we use Selenium for twitter and reddit because it simulates a 
             human user. Social media platforms have huge bot detection algos 
             for one-time access scraping we can use 'requests'
         '''
@@ -186,23 +187,51 @@ class Arbitrary_Scraper:
         txt = soup.body.get_text('\n', strip = False)
         return txt
     
-#the purpose of this class is to scrape a random website where you don't know the html layout
+# the purpose of this class is to scrape the top X pages on google for 
+# specific companies and key words 
 class Google_Scraper:
     def __init__(self, user_agent = 'Mozilla/5.0'):
         self.user_agent = user_agent
 
-    def scrape_website(self, website_link):
+    def scrape_query(self, query):
         '''
             input:
-                website_link is a string that is a link to a random website
+                query is a string that is what a user would plug into a google search 
             output:
-                string that containts all the human-readable text on the website
+                top XX number of links that appear after a query in a googe search 
+                format a list of tuples in the formate (title of webpage, link of webpage)
 
-            note: we use Selenium for tzitter and reddit because it simulates a 
-            human user. Social media platforms have huge bot detection algos 
-            for one-time access scraping we can use 'requests'
+            note: use the Arbitrary_Scraper after using this scraper, which scrapes all human
+            readable text off of any website given a link 
+
+            this is not confimed to 100% work yet on all devices. 
+            it worked locally on mine but not someone elses for some reason.
+            update code if it doesn't work! 
+            
+            reference: https://stackoverflow.com/questions/67032508/using-selenium-to-get-google-search-results-without-detection
         '''
-        response = requests.get(website_link, headers = {'User-Agent': self.user_agent})
-        soup = bs4.BeautifulSoup(response.text,'lxml')
-        txt = soup.body.get_text('\n', strip = False)
-        return txt
+        # Faking real user visit.
+        headers = {
+            "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3538.102 Safari/537.36 Edge/18.19582"
+        }
+
+        # Search query.
+        params = {'q': 'ice cream'}
+
+
+        html = requests.get(f'https://www.google.com/search?q=',
+                            headers=headers,
+                            params=params).text
+
+        # Create a BeautifulSoup object
+        soup = BeautifulSoup(html, 'lxml')
+
+        # select() uses CSS selectors. It's like findAll() or find_all(), you can iterate over it.
+        # if you want to scrape just one element, you can use select_one() method instead.
+        links = []
+        for result in soup.select('.yuRUbf'):
+            title = result.select_one('.DKV0Md').text
+            link = result.select_one('a')['href']
+            links.append((title, link))
+        return links

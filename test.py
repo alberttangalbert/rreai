@@ -1,17 +1,27 @@
 import requests
 from requests_ip_rotator import ApiGateway
+import os
 
-# Create gateway object and initialise in AWS
-gateway = ApiGateway("https://site.com")
-gateway.start()
+keywords = ['test']
 
-# Assign gateway to session
-session = requests.Session()
-session.mount("https://site.com", gateway)
 
-# Send request (IP will be randomised)
-response = session.get("https://site.com/index.php", params={"theme": "light"})
-print(response.status_code)
+def parse(keyword, session):
+    url = f"https://www.google.com/search?q={keyword}"
+    response = session.get(url)
+    print(response)
 
-# Delete gateways
-gateway.shutdown()
+
+if __name__ == '__main__':
+    AWS_ACCESS_KEY_ID = ''
+    AWS_SECRET_ACCESS_KEY = ''
+
+    gateway = ApiGateway("https://www.google.com", access_key_id=AWS_ACCESS_KEY_ID,
+                         access_key_secret=AWS_SECRET_ACCESS_KEY)
+    gateway.start()
+
+    session = requests.Session()
+    session.mount("https://www.google.com", gateway)
+
+    for keyword in keywords:
+        parse(keyword, session)
+    gateway.shutdown()
